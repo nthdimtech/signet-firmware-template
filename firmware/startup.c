@@ -2,13 +2,12 @@
 #include "print.h"
 #include "usart.h"
 
-extern unsigned long _flash_origin;
+extern unsigned long _data_flash;
 extern unsigned long _data_begin;
 extern unsigned long _data_end;
 extern unsigned long _bss_begin;
 extern unsigned long _bss_end;
 extern unsigned long _stack_end;
-extern unsigned long _ivt_ram;
 
 void main();
 
@@ -40,15 +39,13 @@ void handler_reset(void)
 	unsigned long *source;
 	unsigned long *destination;
 	// Copying data from Flash to RAM
-	source = &_flash_origin;
+	source = &_data_flash;
 	for (destination = &_data_begin; destination < &_data_end;)
 		*(destination++) = *(source++);
 
 	// default zero to undefined variables
 	for (destination = &_bss_begin; destination < &_bss_end;)
 		*(destination++) = 0;
-
-	SCB_VTOR = (u32)&_ivt_ram;
 
 	// starting main program
 	main();

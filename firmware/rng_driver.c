@@ -1,11 +1,12 @@
 #include "regmap.h"
 #include "print.h"
-#include "commands.h"
 
 static int rng_rand_level = 0;
 static u32 rng_rand_buf[1024];
 static int rng_rand_head = 0;
 static int rng_rand_tail = 0;
+
+void rng_rand_update();
 
 void rng_init()
 {
@@ -29,7 +30,7 @@ void rng_handler()
 		} else {
 			rng_rand_level++;
 		}
-		cmd_rand_update();
+		rng_rand_update();
 	} else {
 		RNG_SR |= RNG_SR_CECS;
 		RNG_SR |= RNG_SR_SECS;

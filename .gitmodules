@@ -1,6 +1,3 @@
-[submodule "nettle"]
-	path = firmware/nettle
-	url = ../nettle.git
 [submodule "crosstool-ng"]
 	path = firmware/crosstool-ng
 	url = https://github.com/crosstool-ng/crosstool-ng.git

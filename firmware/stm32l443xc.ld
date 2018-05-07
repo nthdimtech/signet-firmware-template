@@ -8,41 +8,25 @@ STORAGE (r) : ORIGIN = 0x8010000, LENGTH = 192K
 SECTIONS
 {
 
-_flash_origin = ORIGIN(FLASH);
 
-.data : AT (ORIGIN(FLASH))
+.text :
 {
-_data_begin = .;
-_ivt_ram = .;
+. = ALIGN(4);
 KEEP(*(.interrupt_vector))
+*(.text .text* .rodata .rodata* .init .init* .fini .fini*)
+. = ALIGN(4);
+} > FLASH
+
+_data_flash = .;
+
+.data : AT (_data_flash)
+{
+. = ALIGN(4);
+_data_begin = .;
 *(.data .data*)
-usb.o(.text .text* .rodata .rodata*)
-usb_fs_driver.o(.text .text* .rodata .rodata*)
-usb_serial.o(.text .text* .rodata .rodata*)
-usb_raw_hid.o(.text .text* .rodata .rodata*)
-usb_keyboard.o(.text .text* .rodata .rodata*)
-usb_storage.o(.text .text* .rodata .rodata*)
-firmware_update_state.o(.text .text* .rodata .rodata*)
-usart.o(.text .text* .rodata .rodata*)
-print.o(.text .text* .rodata .rodata*)
-flash_l443xc.o(.text .text* .rodata .rodata*)
-main_l443xc.o(.text .text* .rodata .rodata*)
-commands.o(.text .text* .rodata .rodata*)
-rtc_rand.o(.text .text* .rodata .rodata*)
-rng_driver.o(.text .text* .rodata .rodata*)
-gpio.o(.text .text* .rodata .rodata*)
-irq.o(.text .text* .rodata .rodata*)
-libc.a(.text .text* .rodata .rodata*)
 . = ALIGN(16);
 _data_end = .;
 } > RAM
-
-.text _flash_origin + SIZEOF(.data) :
-{
-. = ALIGN(16);
-*(.text .text* .rodata .rodata*)
-. = ALIGN(4);
-} > FLASH
 
 .bss :
 {

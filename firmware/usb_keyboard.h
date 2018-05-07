@@ -3,10 +3,16 @@
 
 #include "types.h"
 
-void usb_tx_keyboard();
+//API
+void usb_keyboard_setup();
+void usb_keyboard_idle();
+void usb_keyboard_type_string(char *str);
+void usb_keyboard_stop_typing();
 
-void usb_keyboard_type(u8 *chars, u8 n);
-
+//Callback
 void usb_keyboard_typing_done();
+
+//Internal
+void usb_tx_keyboard();
 
 #endif

@@ -1,0 +1,13 @@
+*.o
+*.o.d
+*~
+*.swp
+*.sfw
+fw.*
+serial-loader
+ct-ng/.build
+ct-ng/build.log
+ct-ng/config
+ct-ng/.config.2
+ct-ng/.config.old
+ct-ng/config.gen

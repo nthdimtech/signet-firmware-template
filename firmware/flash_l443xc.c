@@ -1,6 +1,5 @@
 #include "flash.h"
 #include "regmap.h"
-#include "signetdev/common/signetdev_common.h"
 
 enum flash_state {
 	FLASH_IDLE,
@@ -40,10 +39,18 @@ void flash_erase(void *addr)
 	flash_state = FLASH_ERASING;
 }
 
-void flash_write_complete();
-void flash_write_failed();
+void flash_write_complete_default()
+{
+}
 
-void flash_write_state()
+void flash_write_failed_default()
+{
+}
+
+void flash_write_complete(void) __attribute__ ((weak, alias ("flash_write_complete_default")));
+void flash_write_failed(void) __attribute__ ((weak, alias ("flash_write_failed_default")));
+
+static void flash_write_state()
 {
 	for (int i = 0; i < 32 && flash_write_count > 0; i++) {
 		*(flash_write_addr++) = *(flash_write_data++);
@@ -116,18 +123,5 @@ void flash_write_page(u8 *dest, u8 *src, int count)
 		FLASH_CR |= FLASH_CR_STRT;
 		flash_state = FLASH_ERASING;
 	}
-}
 
-void flash_write(u8 *dest, u8 *src, int count)
-{
-	if (flash_state == FLASH_IDLE) {
-		flash_write_data = (u32 *)src;
-		flash_write_addr = (u32 *)dest;
-		flash_write_count = (count + 7)/8;
-		if (FLASH_CR & FLASH_CR_LOCK)
-			flash_unlock();
-		FLASH_CR |= FLASH_CR_PG;
-		FLASH_CR &= ~FLASH_CR_EOPIE;
-		flash_state = FLASH_WRITING;
-	}
 }

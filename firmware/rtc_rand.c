@@ -5,7 +5,6 @@
 #include "regmap.h"
 #include "types.h"
 #include "print.h"
-#include "commands.h"
 
 static int rtc_rand_level = 0;
 
@@ -42,7 +41,6 @@ void rtc_wakeup(void)
 	rndtemp <<= 1;
 	rndtemp |= rnd;
 	rndtemp_i++;
-	//dprint_s("rtc rand "); dprint_dec(rndtemp_i); dprint_s("\r\n");
 	if (rndtemp_i >= 32) {
 		rndtemp_i = 0;
 		rtc_rand_buf[rtc_rand_head++] ^= rndtemp;
@@ -52,7 +50,7 @@ void rtc_wakeup(void)
 		} else {
 			rtc_rand_level++;
 		}
-		cmd_rand_update();
+		rtc_rand_update();
 	}
 	RTC_ISR &= ~(RTC_ISR_WUTF);
 	EXTI_PR = 1<<RTC_EXTI_LINE;

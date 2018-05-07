@@ -1,5 +1,6 @@
 #include "startup.h"
 #include "print.h"
+#include "signet.h"
 
 extern unsigned long _data_flash;
 extern unsigned long _data_begin;
@@ -9,7 +10,7 @@ extern unsigned long _bss_end;
 extern unsigned long _stack_end;
 
 void busy_delay(int ms);
-void led_on();
+
 
 void handler_default(void)
 {

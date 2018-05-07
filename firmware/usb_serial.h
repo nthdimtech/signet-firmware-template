@@ -3,8 +3,7 @@
 
 #include "types.h"
 #include "regmap.h"
-
-void usb_tx_serial();
+#include "usb.h"
 
 int usb_serial_rx(volatile usbw_t *data, int count);
 void usb_serial_tx();
@@ -19,5 +18,7 @@ struct serial_line_coding {
 };
 
 extern struct serial_line_coding g_serial_line_coding;
+
+#define usb_serial_write(b,l) usb_send_bytes(CDC_TX_ENDPOINT, (b), (l))
 
 #endif

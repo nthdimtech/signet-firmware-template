@@ -11,24 +11,32 @@
 #include "irq.h"
 #include "rng.h"
 #include "crc.h"
-#include "commands.h"
 #include "config.h"
 #include "main.h"
 #include "usb_driver.h"
 
+#define USE_USB 1
+#define USE_RNG 1
+#define USE_FLASH 1
+#define USE_RTC 1
+#define USE_UART 1
+#define USE_CRC 1
+
+void setup(void) __attribute__ ((weak, alias ("default_event_handler")));
+void idle(void) __attribute__ ((weak, alias ("default_event_handler")));
+void button_press(void) __attribute__ ((weak, alias ("default_event_handler")));
+void button_release(void) __attribute__ ((weak, alias ("default_event_handler")));
+void long_button_press(void) __attribute__ ((weak, alias ("default_event_handler")));
+void usb_keyboard_typing_done() __attribute__ ((weak, alias("default_event_handler")));
+void rtc_rand_update() __attribute__ ((weak, alias("default_event_handler")));
+void rng_rand_update() __attribute__ ((weak, alias("default_event_handler")));
+
 volatile int ms_count = 0;
 static int ms_last_pressed = 0;
-static int blink_state = 0;
-static int blink_start = 0;
-static int blink_period = 0;
-static int blink_duration = 0;
-int test_state = 1;
-
-void blink_timeout();
+int button_state = 0;
 
 void led_on()
 {
-	blink_state = 1;
 #if STATUS_LED_COUNT > 0
 	STATUS_LED1_PORT->BSRR = 1 << (STATUS_LED1_PIN);
 #if STATUS_LED_COUNT > 1
@@ -39,7 +47,6 @@ void led_on()
 
 void led_off()
 {
-	blink_state = 0;
 #if STATUS_LED_COUNT > 0
 	STATUS_LED1_PORT->BSRR = 1 << (STATUS_LED1_PIN + 16);
 #if STATUS_LED_COUNT > 1
@@ -47,80 +54,6 @@ void led_off()
 #endif
 #endif
 }
-
-static int blink_paused = 0;
-
-static u8 timeout_event_secs;
-
-void blink_idle()
-{
-	if (blink_period > 0 && !blink_paused) {
-		int next_blink_state = ((ms_count - blink_start)/(blink_period/2)) % 2;
-		if (next_blink_state != blink_state) {
-			if (next_blink_state) {
-				led_off();
-			} else {
-				led_on();
-			}
-		}
-		blink_state = next_blink_state;
-		int timeout_event_msecs = blink_duration - (ms_count - blink_start);
-		int next_timeout_event_secs = (timeout_event_msecs+999)/1000;
-		if ((timeout_event_msecs <= 0) && (blink_duration > 0)) {
-			blink_period = 0;
-			led_off();
-			dprint_s("BLINK TIMEOUT\r\n");
-			blink_timeout();
-		}
-		if (next_timeout_event_secs != timeout_event_secs) {
-			timeout_event_secs = next_timeout_event_secs;
-			if (device_state != DISCONNECTED && device_state != RESET) {
-				cmd_event_send(2, &timeout_event_secs, sizeof(timeout_event_secs));
-			}
-		}
-	}
-}
-
-void start_blinking(int period, int duration)
-{
-	blink_start = ms_count;
-	blink_period = period;
-	blink_duration = duration;
-	timeout_event_secs = (blink_duration + 999)/1000;
-	led_on();
-}
-
-static int pause_start;
-
-void pause_blinking()
-{
-	led_off();
-	blink_paused = 1;
-	pause_start = ms_count;
-}
-
-void resume_blinking()
-{
-	if (blink_paused) {
-		blink_start += (ms_count - pause_start);
-		blink_paused = 0;
-		blink_idle();
-	}
-}
-
-void stop_blinking()
-{
-	blink_period = 0;
-	blink_paused = 0;
-	led_off();
-}
-
-int is_blinking()
-{
-	return blink_period > 0;
-}
-
-int button_state = 0;
 
 void systick_handler()
 {
@@ -132,10 +65,10 @@ void delay(int ms)
 	int ms_target = ms_count + ms;
 	while(ms_count < ms_target);
 }
-void button_press();
-void button_release();
-void long_button_press();
-extern volatile int typing;
+
+void default_event_handler()
+{
+}
 
 int press_pending = 0;
 
@@ -146,29 +79,32 @@ void BUTTON_HANDLER()
 	EXTI_PR = (1<<BUTTON_PIN);
 }
 
-#define USE_USB 1
-#define USE_RNG 1
-#define USE_FLASH 1
-#define USE_RTC 1
-#define USE_SDMMC 0
-#define USE_UART 1
-#define USE_CRC 1
-
-void cmd_init();
-
-static int timer_target;
-
-void timer_start(int ms)
+void loop()
 {
-	timer_target = ms_count + ms;
+	__asm__("cpsie i");
+	if (!flash_writing()) {
+		__asm__("wfi");
+	}
+	__asm__("cpsid i");
+	flash_idle();
+	if (press_pending) {
+		press_pending = 0;
+		if (!button_state) {
+			button_state = 1;
+			button_press();
+			goto end;
+		}
+	}
+	int current_button_state = (BUTTON_PORT->IDR & (1<<BUTTON_PIN)) ? 0 : 1;
+	if (!current_button_state && button_state && (ms_count - ms_last_pressed) > 100) {
+		button_state = 0;
+		button_release();
+		goto end;
+	}
+	idle();
+end:
+	__asm__("cpsie i");
 }
-
-void timer_stop()
-{
-	timer_target = 0;
-}
-
-void timer_timeout();
 
 int main()
 {
@@ -217,11 +153,6 @@ int main()
 	EXTI_RTSR |= (1<<USB_EXTI_LINE);
 	enable_irq(USB_FS_IRQ);
 	apb1enr1_val |= RCC_APB1ENR1_USBFSEN;
-#endif
-#if USE_SDMMC
-	set_irq_priority(SDMMC_IRQ, 192);
-	enable_irq(SDMMC_IRQ);
-	apb2enr_val |= RCC_APB2ENR_SDMMCEN;
 #endif
 
 	set_irq_priority(BUTTON_IRQ, 64);
@@ -278,7 +209,6 @@ int main()
 	SYSCFG_EXTICR(BUTTON_PIN/4) = (BUTTON_PORT_NUM << (4*(BUTTON_PIN % 4)));
 	gpio_set_in(BUTTON_PORT, BUTTON_PIN, 1);
 	EXTI_FTSR |= (1<<BUTTON_PIN);
-	//EXTI_RTSR |= (1<<BUTTON_PIN);
 	EXTI_IMR |= (1<<BUTTON_PIN);
 
 	//Led pins
@@ -291,6 +221,8 @@ int main()
 	gpio_out_set(STATUS_LED2_PORT, STATUS_LED2_PIN);
 #endif
 #endif
+	led_on();
+
 
 #if USE_FLASH
 	if (FLASH_CR & FLASH_CR_LOCK)
@@ -317,14 +249,6 @@ int main()
 	rtc_rand_init(0x7f);
 #endif
 
-	start_blinking(1000,100);
-
-#if USE_SDMMC
-	SDMMC_POWER = SDMMC_POWER_PWRCTRL_ON;
-	SDMMC_CLKCR = SDMMC_CLKCR_CLKEN | SDMMC_CLKCR_WIDBUS_4BIT;
-#endif
-	cmd_init();
-
 #if USE_USB
 	PWR_CR2 |= PWR_CR2_USV;
 	CRS_CR |= CRS_CR_AUTOTRIMEN;
@@ -333,34 +257,8 @@ int main()
 	usb_reset_device();
 #endif
 	dprint_s("Entering main loop\r\n");
-	while(1) {
-		if (!flash_writing() && !button_state) {
-			__asm__("wfi");
-		}
-		__asm__("cpsid i");
-		if (ms_count > timer_target && timer_target != 0) {
-			timer_timeout();
-			timer_target = 0;
-		}
-		blink_idle();
-		flash_idle();
-		if (press_pending) {
-			press_pending = 0;
-			if (!button_state) {
-				button_press();
-				button_state = 1;
-			}
-		}
-		int current_button_state = (BUTTON_PORT->IDR & (1<<BUTTON_PIN)) ? 0 : 1;
-		if (!current_button_state && button_state && (ms_count - ms_last_pressed) > 100) {
-			button_release();
-			button_state = 0;
-		}
-		if (button_state && ((ms_count - ms_last_pressed) > 2000)) {
-			button_state = 0;
-			long_button_press();
-		}
-		__asm__("cpsie i");
-	}
+	setup();
+	while(1)
+		loop();
 	return 0;
 }

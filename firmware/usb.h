@@ -1,11 +1,20 @@
 #ifndef USB_H
 #include "types.h"
 #include "regmap.h"
-#include "signetdev/common/signetdev_common.h"
 
 void usb_send_bytes(int ep, const u8 *data, int length);
 
 #define LANGID_US_ENGLISH 0x409
+
+#define USB_VENDOR_ID (0x5E2A)
+#define USB_SIGNET_DESKTOP_PRODUCT_ID (0x0001)
+#define USB_SIGNET_MOBILE_PRODUCT_ID (0x0001)
+#define USB_REV_ID (0x0483)
+#define USB_RAW_HID_USAGE_PAGE	0xFFAB	// recommended: 0xFF00 to 0xFFFF
+#define USB_RAW_HID_USAGE	0x0200	// recommended: 0x0100 to 0xFFFF
+#define RAW_HID_PACKET_SIZE 64
+#define RAW_HID_HEADER_SIZE 1
+#define RAW_HID_PAYLOAD_SIZE (RAW_HID_PACKET_SIZE - RAW_HID_HEADER_SIZE)
 
 #define CDC_STATUS_INTERFACE 0
 #define CDC_DATA_INTERFACE 1

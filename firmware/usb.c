@@ -4,7 +4,6 @@
 #include "usb_serial.h"
 #include "usb_raw_hid.h"
 #include "usb_keyboard.h"
-#include "signetdev/common/hid_keyboard.h"
 #include "usb_storage.h"
 #include "config.h"
 #include "usb_driver.h"
