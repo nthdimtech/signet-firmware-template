@@ -1,14 +1,12 @@
-all: fw.bin
+all: fw.dfu
 
 HTUPLE:=arm-none-eabi
-
-HOST_CFLAGS=-I.. -std=c99 -D_DEFAULT_SOURCE
 
 CFLAGS=-DFIRMWARE -Wall -mcpu=cortex-m4 -mthumb -ffunction-sections -fdata-sections -O2 -I..
 LDFLAGS=-Wl,"--gc-sections" -Wl,"-Tstm32l443xc.ld"
 
 clean:
-	rm -rf *.o *.d fw.elf fw.bin
+	rm -rf *.o *.d fw.elf fw.bin fw.dfu
 
 %.o: %.c
 	$(HTUPLE)-gcc  $(CFLAGS) $< -c -o $@
@@ -41,5 +39,9 @@ fw.elf: $(OBJECTS)
 
 fw.bin: fw.elf
 	$(HTUPLE)-objcopy $^ -O binary $@
+
+fw.dfu: fw.bin
+	cp $^ $@
+	dfu-suffix -v 0x0483 -p 0xdf11 -a $@
 
 -include $(DEPFILES)
