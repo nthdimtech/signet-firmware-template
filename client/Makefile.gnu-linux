@@ -1,0 +1,2 @@
+raw_hid_msg: raw_hid_msg_gnu_linux.c
+	gcc $^ -o $@

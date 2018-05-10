@@ -1,0 +1,2 @@
+raw_hid_msg.exe: raw_hid_msg_win32.c hid_WINDOWS.c
+       gcc $^ -o $@	
