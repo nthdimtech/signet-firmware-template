@@ -1,0 +1,2 @@
+raw_hid_msg: raw_hid_msg_generic.c hid_MACOSX.c
+	gcc -framework CoreFoundation -framework IOKit $^ -o $@

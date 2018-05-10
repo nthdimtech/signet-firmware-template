@@ -1,2 +1,2 @@
-raw_hid_msg.exe: raw_hid_msg_win32.c hid_WINDOWS.c
+raw_hid_msg.exe: raw_hid_msg_generic.c hid_WINDOWS.c
 	gcc $^ -lhid -lsetupapi -o $@
