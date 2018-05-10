@@ -106,6 +106,8 @@ end:
 	__asm__("cpsie i");
 }
 
+u8 _storage[96][2048];
+
 int main()
 {
 	RCC_CFGR = (RCC_CFGR & ~(RCC_CFGR_HPRE_MASK)) |

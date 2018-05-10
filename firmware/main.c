@@ -14,7 +14,15 @@ static int led_blinking;
 
 int usb_raw_hid_rx(volatile usbw_t *data, int count)
 {
-	return 0;
+	u8 msg[256];
+	for (int i = 0; i < count && i < sizeof(msg); i++) {
+		msg[i] = (data[i>>1] >> (8*(i&1))) & 0xff;
+		if (msg[i] == 0) {
+			flash_write_page(_storage[0], msg, i);
+			break;
+		}
+	}
+	return 1;
 }
 
 void usb_raw_hid_tx()
@@ -39,7 +47,7 @@ int usb_serial_rx(volatile usbw_t *data, int count)
 	static char line_echo[256];
 	static int line_pos;
 	for (int i = 0; i < count; i++) {
-		u8 c = data[i];
+		u8 c = (data[i>>1] >> (8*(i&1))) & 0xff;
 		line[line_pos] = c;
 		if (c == '\r') {
 			line[line_pos++] = '\r';
@@ -74,8 +82,18 @@ struct serial_line_coding g_serial_line_coding = {
 
 void button_press()
 {
+	const char *str = NULL;
+	int i;
 	led_blinking = 1;
-	usb_keyboard_type_string("Hello world!");
+	for (i = 0; i < 2048; i++) {
+		if (_storage[0][i] == 0) {
+			str = (char *)_storage[0];
+		}
+	}
+	if (!str) {
+		str = "Hello world!";
+	}
+	usb_keyboard_type_string(str);
 }
 
 void button_release()

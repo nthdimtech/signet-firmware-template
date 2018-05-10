@@ -6,7 +6,7 @@
 //API
 void usb_keyboard_setup();
 void usb_keyboard_idle();
-void usb_keyboard_type_string(char *str);
+void usb_keyboard_type_string(const char *str);
 void usb_keyboard_stop_typing();
 
 //Callback

@@ -51,7 +51,7 @@ _stack_begin = _stack_end - _stack_size;
 
 .special :
 {
-_root_page = .;
+_storage = .;
 } > STORAGE
 
 }

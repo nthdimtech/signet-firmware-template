@@ -8,7 +8,7 @@ static u8 type_buffer[2];
 static int typing;
 static int ms_type_next = -1;
 static int scancode_typing;
-static char *type_str;
+static const char *type_str;
 static int type_pos;
 
 struct key {
@@ -91,14 +91,14 @@ void usb_tx_keyboard()
 	if (typing) {
 		typing = 0;
 		if (!scancode_typing) {
-			ms_type_next = ms_count + 50;
+			ms_type_next = ms_count + 100;
 		} else {
 			usb_keyboard_type(0, 0);
 		}
 	}
 }
 
-void usb_keyboard_type_string(char *str)
+void usb_keyboard_type_string(const char *str)
 {
 	type_str = str;
 	type_pos = 0;

@@ -1,2 +1,2 @@
 #!/bin/sh
-sudo dfu-util -a 0 -s 0x8000000 -D fw.dfu
+dfu-util -a 0 -s 0x8000000 -D fw.dfu
